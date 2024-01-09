@@ -4,7 +4,7 @@ kind: Task
 metadata:
   name: push-fake-image
 spec:
-  description: "TODO"
+  description: "This Tekton Task and Pipeline are just pushing fake container image. They are meant for testing artifact signing performance by Tekton Chains."
   params:
     - name: SIZE
       type: string
