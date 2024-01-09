@@ -39,10 +39,10 @@ spec:
 
         dd if=/dev/urandom of=/var/lib/containers/payload.data bs=$(params.SIZE) count=1 iflag=fullblock
 
+        export HOME=/tmp
         if [ "$(workspaces.dockerconfig.bound)" = "true" ]; then
           # # This does not work for me
           # # https://oras.land/docs/how_to_guides/authentication
-          # export HOME=/tmp
           # mkdir -p /tmp/.docker/
           # ln -s "$(workspaces.dockerconfig.path)/.dockercfg" /tmp/.docker/config.json
           registry=$( echo "$(params.IMAGE)" | cut -d '/' -f 1 )
