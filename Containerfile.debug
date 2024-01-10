@@ -1,8 +1,10 @@
 FROM quay.io/rhcloudperfscale/push-fake-image
 
 USER 0
-RUN microdnf -y install curl cosign podman skopeo tini
+RUN microdnf -y install curl podman skopeo tini
+RUN curl -L https://github.com/sigstore/cosign/releases/download/v2.2.2/cosign-linux-amd64 -o /usr/local/bin/cosign && chmod +x /usr/local/bin/cosign
 RUN curl -L https://github.com/sigstore/rekor/releases/download/v1.3.4/rekor-cli-linux-amd64 -o /usr/local/bin/rekor && chmod +x /usr/local/bin/rekor
 USER 1001
+ENV HOME=/tmp
 
 CMD tini sleep 1d
