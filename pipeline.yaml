@@ -53,7 +53,7 @@ spec:
 
         oras push --insecure "$(params.IMAGE)" "/var/lib/containers/payload.data:$(params.MEDIA_TYPE)"
 
-        echo "$(params.IMAGE)" > "$(results.IMAGE_URL.path)"
+        echo -n "$(params.IMAGE)" > "$(results.IMAGE_URL.path)"
       volumeMounts:
         - name: varlibcontainers
           mountPath: /var/lib/containers
