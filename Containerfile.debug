@@ -1,0 +1,8 @@
+FROM registry.fedoraproject.org/fedora-minimal
+
+USER 0
+RUN microdnf -y install coreutils jq golang-oras skopeo tini
+RUN curl https://github.com/sigstore/rekor/releases/download/v1.3.4/rekor-cli-linux-amd64 -O /usr/local/bin/rekor && chmod +x /usr/local/bin/rekor
+USER 1001
+
+CMD tini --
