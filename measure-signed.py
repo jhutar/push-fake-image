@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import argparse
+import csv
 import datetime
 import json
 import logging
@@ -96,6 +97,12 @@ def main():
         action="store_true",
     )
     parser.add_argument(
+        "--save",
+        help="Save ",
+        default="/tmp/measure-signed.csv",
+        type=str,
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         help="Verbose output",
@@ -138,12 +145,12 @@ def main():
             ###now = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
             now = datetime.datetime.now(datetime.UTC)
 
-            ###response = session.get(url, headers=headers, verify=verify, timeout=100)
-            ###response.raise_for_status()
-            ###data = response.json()
-            ###logging.debug(f"Obtained {len(response.content)} bytes of data with {response.status_code} status code")
-            with open("../openshift-pipelines_performance/taskruns-table.json", "r") as fd:
-                data = json.load(fd)
+            response = session.get(url, headers=headers, verify=verify, timeout=100)
+            response.raise_for_status()
+            data = response.json()
+            logging.debug(f"Obtained {len(response.content)} bytes of data with {response.status_code} status code")
+            ###with open("../openshift-pipelines_performance/taskruns-table.json", "r") as fd:
+            ###    data = json.load(fd)
 
             taskruns_all = 0
             taskruns_succeeded = 0
@@ -176,7 +183,12 @@ def main():
             taskruns_sig_avg = None
             if len(taskruns_sig_duration) > 0:
                 taskruns_sig_avg = sum(taskruns_sig_duration) / len(taskruns_sig_duration)
+
             logger.info(f"Status as of {now.isoformat()}: all={taskruns_all}, succeeded={taskruns_succeeded}, signed={taskruns_signed}, guessed avg duration={taskruns_sig_avg:.02f} out of {len(taskruns_sig_duration)}")
+
+            with open(args.save, "a") as fd:
+                csv_writer = csv.writer(fd)
+                csv_writer.writerow([now.isoformat(), taskruns_all, taskruns_succeeded, taskruns_signed, taskruns_sig_avg, len(taskruns_sig_duration)])
 
             time.sleep(args.delay)
     finally:
