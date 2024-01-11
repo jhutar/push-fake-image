@@ -5,6 +5,9 @@ metadata:
 spec:
   pipelineRef:
     name: push-fake-image
+  podTemplate:
+    imagePullSecrets:
+      - name: registry-credentials
 
   params:
     - name: SIZE
