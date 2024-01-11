@@ -21,6 +21,8 @@ spec:
   results:
     - name: IMAGE_URL
       description: "Target payload"
+    - name: IMAGE_DIGEST
+      description: "Targget digest"
   workspaces:
     ###- name: source
     - name: dockerconfig
@@ -51,9 +53,11 @@ spec:
             | oras login --insecure --username "$username" --password-stdin "$registry"
         fi
 
-        oras push --insecure "$(params.IMAGE)" "/var/lib/containers/payload.data:$(params.MEDIA_TYPE)"
+        oras push --insecure "$(params.IMAGE)" "/var/lib/containers/payload.data:$(params.MEDIA_TYPE)" \
+          | tee /tmp/LOG
 
         echo -n "$(params.IMAGE)" > "$(results.IMAGE_URL.path)"
+        grep '^Digest:' /tmp/LOG | cut -d ' ' -f 2 > "$(results.IMAGE_DIGEST.path)"
       volumeMounts:
         - name: varlibcontainers
           mountPath: /var/lib/containers
