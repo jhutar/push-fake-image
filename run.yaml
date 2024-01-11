@@ -7,7 +7,7 @@ spec:
     name: push-fake-image
   podTemplate:
     imagePullSecrets:
-      - name: registry-credentials
+      - name: "DOCKERCONFIG_SECRET_NAME"
 
   params:
     - name: SIZE
@@ -28,4 +28,4 @@ spec:
     ###          storage: 1Gi
     - name: dockerconfig
       secret:
-        secretName: builder-dockercfg-nhbmx
+        secretName: "DOCKERCONFIG_SECRET_NAME"
