@@ -184,7 +184,7 @@ def main():
                     if completed_time is not None and signed_time is not None:
                         taskruns_sig_duration.append((signed_time - completed_time).total_seconds())
 
-            taskruns_sig_avg = None
+            taskruns_sig_avg = 0
             if len(taskruns_sig_duration) > 0:
                 taskruns_sig_avg = sum(taskruns_sig_duration) / len(taskruns_sig_duration)
 
