@@ -141,7 +141,7 @@ def main():
 
     with open(args.save, "w") as fd:
         csv_writer = csv.writer(fd)
-        csv_writer.writerow(["date", "all", "succeeded", "signed", "guessed avg", "guessed from count"])
+        csv_writer.writerow(["date", "all", "succeeded", "signed", "unsigned", "guessed avg", "guessed from count"])
 
     try:
         i = 0
@@ -192,7 +192,7 @@ def main():
 
             with open(args.save, "a") as fd:
                 csv_writer = csv.writer(fd)
-                csv_writer.writerow([now.isoformat(), taskruns_all, taskruns_succeeded, taskruns_signed, taskruns_sig_avg, len(taskruns_sig_duration)])
+                csv_writer.writerow([now.isoformat(), taskruns_all, taskruns_succeeded, taskruns_signed, taskruns_succeeded - taskruns_signed, taskruns_sig_avg, len(taskruns_sig_duration)])
 
             time.sleep(args.delay)
     finally:
