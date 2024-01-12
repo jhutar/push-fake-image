@@ -139,6 +139,10 @@ def main():
     if args.insecure:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+    with open(args.save, "w") as fd:
+        csv_writer = csv.writer(fd)
+        csv_writer.writerow(["date", "all", "succeeded", "signed", "guessed avg", "guessed from count"])
+
     try:
         i = 0
         while True:
