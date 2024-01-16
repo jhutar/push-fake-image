@@ -58,7 +58,7 @@ def parsedate(string):
         return datetime.datetime.fromisoformat(string)
     except AttributeError:
         out = datetime.datetime.strptime(string, "%Y-%m-%dT%H:%M:%SZ")
-        out = out.replace(tzinfo=string_tz)
+        out = out.replace(tzinfo=datetime.timezone.utc)
         return out
 
 
