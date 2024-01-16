@@ -4,7 +4,6 @@
 import argparse
 import csv
 import datetime
-import json
 import logging
 import logging.handlers
 import requests
@@ -144,7 +143,6 @@ def main():
         csv_writer.writerow(["date", "all", "succeeded", "signed", "unsigned", "guessed avg", "guessed from count"])
 
     try:
-        i = 0
         while True:
             if "UTC" in dir(datetime):
                 now = datetime.datetime.now(datetime.UTC)
@@ -155,8 +153,8 @@ def main():
             response.raise_for_status()
             data = response.json()
             logging.debug(f"Obtained {len(response.content)} bytes of data with {response.status_code} status code")
-            ###with open("../openshift-pipelines_performance/taskruns-table.json", "r") as fd:
-            ###    data = json.load(fd)
+            # with open("../openshift-pipelines_performance/taskruns-table.json", "r") as fd:
+            #     data = json.load(fd)
 
             taskruns_all = 0
             taskruns_succeeded = 0
