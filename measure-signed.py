@@ -146,8 +146,10 @@ def main():
     try:
         i = 0
         while True:
-            ###now = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
-            now = datetime.datetime.now(datetime.UTC)
+            if "UTC" in dir(datetime):
+                now = datetime.datetime.now(datetime.UTC)
+            else:
+                now = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
 
             response = session.get(url, headers=headers, verify=verify, timeout=100)
             response.raise_for_status()
