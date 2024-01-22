@@ -140,7 +140,9 @@ def main():
 
     with open(args.save, "w") as fd:
         csv_writer = csv.writer(fd)
-        csv_writer.writerow(["date", "all", "succeeded", "signed", "unsigned", "guessed avg", "guessed from count"])
+        csv_writer.writerow(["date", "all", "succeeded", "signed", "unsigned", "guessed avg", "guessed from count", "latency created succeeded", "latency succeeded signed"])
+
+    what_when = {}   # when was each TaskRun completed and signed?
 
     try:
         while True:
@@ -162,11 +164,24 @@ def main():
             taskruns_sig_duration = []
 
             for row in data["rows"]:
+                name = row["object"]["metadata"]["name"]
+                if name not in what_when:
+                    what_when[name] = {"created": None, "succeeded": None, "signed": None}
+                if what_when[name]["created"] is None:
+                    what_when[name]["created"] = parsedate(row["object"]["metadata"]["creationTimestamp"])
+
                 taskruns_all += 1
                 if row["cells"][2] == "Succeeded" and row["cells"][1] == "True":
                     taskruns_succeeded += 1
+
+                    if what_when[name]["succeeded"] is None:
+                        what_when[name]["succeeded"] = now
+
                 if "annotations" in row["object"]["metadata"] and "chains.tekton.dev/signed" in row["object"]["metadata"]["annotations"] and row["object"]["metadata"]["annotations"]["chains.tekton.dev/signed"] == "true":
                     taskruns_signed += 1
+
+                    if what_when[name]["signed"] is None:
+                        what_when[name]["signed"] = now
 
                     # Guess signing duration
                     completed_time = None
@@ -188,11 +203,20 @@ def main():
             if len(taskruns_sig_duration) > 0:
                 taskruns_sig_avg = sum(taskruns_sig_duration) / len(taskruns_sig_duration)
 
-            logger.info(f"Status as of {now.isoformat()}: all={taskruns_all}, succeeded={taskruns_succeeded}, signed={taskruns_signed}, guessed avg duration={taskruns_sig_avg:.02f} out of {len(taskruns_sig_duration)}")
+            latency_created_succeeded = 0.0
+            data_created_succeeded = [(t["succeeded"] - t["created"]).total_seconds() for t in what_when.values() if t["created"] is not None and t["succeeded"] is not None]
+            if len(data_created_succeeded) > 0:
+                latency_created_succeeded = sum(data_created_succeeded) / len(data_created_succeeded)
+            latency_succeeded_signed = 0.0
+            data_succeeded_signed = [(t["signed"] - t["succeeded"]).total_seconds() for t in what_when.values() if t["succeeded"] is not None and t["signed"] is not None]
+            if len(data_succeeded_signed) > 0:
+                latency_succeeded_signed = sum(data_succeeded_signed) / len(data_succeeded_signed)
+
+            logger.info(f"Status as of {now.isoformat()}: all={taskruns_all}, succeeded={taskruns_succeeded}, signed={taskruns_signed}, guessed avg duration={taskruns_sig_avg:.02f} out of {len(taskruns_sig_duration)}, latency_created_succeeded={latency_created_succeeded}, latency_succeeded_signed={latency_succeeded_signed}")
 
             with open(args.save, "a") as fd:
                 csv_writer = csv.writer(fd)
-                csv_writer.writerow([now.isoformat(), taskruns_all, taskruns_succeeded, taskruns_signed, taskruns_succeeded - taskruns_signed, taskruns_sig_avg, len(taskruns_sig_duration)])
+                csv_writer.writerow([now.isoformat(), taskruns_all, taskruns_succeeded, taskruns_signed, taskruns_succeeded - taskruns_signed, taskruns_sig_avg, len(taskruns_sig_duration), latency_created_succeeded, latency_succeeded_signed])
 
             time.sleep(args.delay)
     finally:
