@@ -227,7 +227,7 @@ def main():
 
             time.sleep(args.delay)
     finally:
-        print("Goodbye")
+        logger.info("Goodbye")
 
 
 if __name__ == "__main__":
