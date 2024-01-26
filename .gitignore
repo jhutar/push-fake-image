@@ -1,0 +1,5 @@
+.*.swp
+
+scenario/signing-bigbang/pipeline.yaml
+scenario/signing-bigbang/run.yaml
+scenario/signing-ongoing/run.yaml
