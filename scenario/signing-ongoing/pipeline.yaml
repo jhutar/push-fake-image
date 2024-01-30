@@ -47,9 +47,14 @@ spec:
           # # https://oras.land/docs/how_to_guides/authentication
           # mkdir -p /tmp/.docker/
           # ln -s "$(workspaces.dockerconfig.path)/.dockercfg" /tmp/.docker/config.json
+
+          docker_config_file="$(workspaces.dockerconfig.path)/.dockercfg"
+          [ -r "$(workspaces.dockerconfig.path)/.dockerconfigjson" ] && docker_config_file="$(workspaces.dockerconfig.path)/.dockerconfigjson"
+
           registry=$( echo "$(params.IMAGE)" | cut -d '/' -f 1 )
-          username=$( cat "$(workspaces.dockerconfig.path)/.dockercfg" | jq --raw-output '."'$registry'".username' )
-          cat "$(workspaces.dockerconfig.path)/.dockercfg" | jq --raw-output '."'$registry'".password' \
+          username=$( cat "$docker_config_file" | jq --raw-output '.auths."'"$registry"'".username // ."'"$registry"'".username' )
+          cat "$docker_config_file" \
+            | jq --raw-output '.auths."'"$registry"'".password // ."'"$registry"'".password' \
             | oras login --insecure --username "$username" --password-stdin "$registry"
         fi
 
