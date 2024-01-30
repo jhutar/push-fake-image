@@ -13,7 +13,8 @@ spec:
     - name: SIZE
       value: "1k"
     - name: IMAGE
-      value: "image-registry.openshift-image-registry.svc.cluster.local:5000/benchmark/test:$(context.pipelineRun.name)"
+      value: "IMAGE_NAME"
+      ###value: "image-registry.openshift-image-registry.svc.cluster.local:5000/benchmark/test:$(context.pipelineRun.name)"
       ###value: "registry.utils.svc.cluster.local:5000/benchmark/golang-docker-build-tutorial"
 
   workspaces:

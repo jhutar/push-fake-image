@@ -12,8 +12,8 @@
     #### Ignore some long path
     ###'''examples\/some\/long\/path\/server.key$''',
 
-    '''scenario\/signing-standoci-bigbang\/certs\/htpasswd$''',
-    '''scenario/signing-standoci-bigbang/certs/registry.key$''',
+    '''scenario\/common\/certs\/htpasswd$''',
+    '''scenario/common/certs/registry.key$''',
   ]
 
   #### Ignore based on any subset of the line
