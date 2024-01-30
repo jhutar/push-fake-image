@@ -13,6 +13,7 @@ function cosign_generate_key_pair_secret() {
 }
 
 # Configure Chains as per https://tekton.dev/docs/chains/signed-provenance-tutorial/#configuring-tekton-chains
+kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"disabled": false}}}'
 kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"artifacts.taskrun.format": "slsa/v1"}}}'
 kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"artifacts.taskrun.storage": "oci"}}}'
 kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"artifacts.oci.storage": "oci"}}}'
