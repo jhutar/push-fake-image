@@ -97,9 +97,15 @@ def main():
     )
     parser.add_argument(
         "--save",
-        help="Save ",
+        help="Save CSV with ongoing values to this file",
         default="/tmp/measure-signed.csv",
         type=str,
+    )
+    parser.add_argument(
+        "--expect-signatures",
+        help="How many signatures to expect? End once we reach the number. Use 0 for no limit.",
+        default=0,
+        type=int,
     )
     parser.add_argument(
         "-v",
@@ -149,6 +155,7 @@ def main():
             if "UTC" in dir(datetime):
                 now = datetime.datetime.now(datetime.UTC)
             else:
+                # Older Python workaround
                 now = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
 
             response = session.get(url, headers=headers, verify=verify, timeout=100)
@@ -224,6 +231,10 @@ def main():
             with open(args.save, "a") as fd:
                 csv_writer = csv.writer(fd)
                 csv_writer.writerow([now.isoformat(), taskruns_all, taskruns_succeeded, taskruns_signed_true, taskruns_signed_false, taskruns_succeeded - taskruns_signed_true - taskruns_signed_false, taskruns_sig_avg, len(taskruns_sig_duration), latency_created_succeeded, latency_succeeded_signed])
+
+            if args.expect_signatures != 0 and taskruns_signed_true + taskruns_signed_false >= args.expect_signatures:
+                logger.info(f"We reached {taskruns_signed_true + taskruns_signed_false} signed TaskRuns and we expected {args.expect_signatures}, so we are good")
+                break
 
             time.sleep(args.delay)
     finally:
