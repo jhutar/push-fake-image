@@ -15,5 +15,3 @@ To use it:
     [...]
     $ oc -n benchmark get TaskRun/push-fake-image-44fk8-push-fake-image -o json | jq --raw-output '.status.results[] | select(.name=="IMAGE_URL").value'
     image-registry.openshift-image-registry.svc.cluster.local:5000/benchmark/test:push-fake-image-44fk8
-
-Code in `scenario/` directory is supposed to work with <https://github.com/openshift-pipelines/performance/>.
