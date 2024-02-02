@@ -1,4 +1,11 @@
 function cosign_generate_key_pair_secret() {
+    immutable="$( kubectl -n openshift-pipelines get secret/signing-secrets -o json | jq --raw-output ".immutable" )"
+    if [[ $immutable == "true" ]]; then
+        debug "Secret signing-secrets already there, immutable, skipping creating it again"
+        return
+    fi
+
+    info "Generating signing-secrets secret"
     export COSIGN_PASSWORD=reset
     before=$( date +%s )
     while ! cosign generate-key-pair -d k8s://openshift-pipelines/signing-secrets; do
@@ -12,14 +19,17 @@ function cosign_generate_key_pair_secret() {
     done
 }
 
-function chains_setup_oci_oci() {
-    info "Setting up Chains with oci/oci"
+function chains_setup_generic() {
+    local artifacts_taskrun_format="$1"
+    local artifacts_oci_storage="$2"
+
+    info "Setting up Chains with tekton/tekton"
 
     # Configure Chains as per https://tekton.dev/docs/chains/signed-provenance-tutorial/#configuring-tekton-chains
     kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"disabled": false}}}'
     kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"artifacts.taskrun.format": "slsa/v1"}}}'
-    kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"artifacts.taskrun.storage": "oci"}}}'
-    kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"artifacts.oci.storage": "oci"}}}'
+    kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"artifacts.taskrun.storage": "'"$artifacts_taskrun_format"'"}}}'
+    kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"artifacts.oci.storage": "'"$artifacts_oci_storage"'"}}}'
     kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"transparency.enabled": "false"}}}'   # this is the only difference from the docs
 
     # Create signing-secrets secret
@@ -30,6 +40,13 @@ function chains_setup_oci_oci() {
     oc -n openshift-pipelines rollout restart deployment/tekton-chains-controller
     oc -n openshift-pipelines rollout status deployment/tekton-chains-controller
     oc -n openshift-pipelines wait --for=condition=ready --timeout=300s pod -l app.kubernetes.io/part-of=tekton-chains
+}
+
+function chains_setup_tekton_tekton() {
+    chains_setup_generic tekton tekton
+}
+function chains_setup_oci_oci() {
+    chains_setup_generic oci oci
 }
 
 function chains_start() {
@@ -119,9 +136,15 @@ function imagestreamtags_wait() {
     debug "Configured test end time to match when last imagestreamtag was created: $last_pushed"
 }
 
+function measure_signed_wait() {
+    info "Waiting for measure-signed.py to quit PID $( cat ./measure-signed.pid )"
+    wait "$( cat ./measure-signed.pid )"
+    info "Now measure-signed.py finished PID $( cat ./measure-signed.pid )"
+}
+
 function measure_signed_start() {
     info "Starting measure-signed.py to monitor signatures"
-    ./push-fake-image/measure-signed.py --server "$( oc whoami --show-server )" --namespace benchmark --token "$( oc whoami -t )" --insecure --save ./measure-signed.csv &
+    ./push-fake-image/measure-signed.py --server "$( oc whoami --show-server )" --namespace "benchmark" --token "$( oc whoami -t )" --insecure --save "./measure-signed.csv" --expect-signatures "$TEST_TOTAL" --status-data-file "benchmark-tekton.json" &
     measure_signed_pid=$!
     echo "$measure_signed_pid" >./measure-signed.pid
     debug "Started with PID $measure_signed_pid"
