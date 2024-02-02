@@ -4,6 +4,7 @@
 import argparse
 import csv
 import datetime
+import json
 import logging
 import logging.handlers
 import requests
@@ -99,6 +100,11 @@ def main():
         "--save",
         help="Save CSV with ongoing values to this file",
         default="/tmp/measure-signed.csv",
+        type=str,
+    )
+    parser.add_argument(
+        "--status-data-file",
+        help="JSON file where we should save some final stats",
         type=str,
     )
     parser.add_argument(
@@ -239,6 +245,25 @@ def main():
             time.sleep(args.delay)
     finally:
         logger.info("Goodbye")
+
+        if args.status_data_file is not None:
+            with open(args.status_data_file, "r") as fd:
+                sd = json.load(fd)
+            if "results" not in sd:
+                sd["results"] = {}
+            if "signatures" not in sd["results"]:
+                sd["results"]["signatures"] = {}
+            sd["results"]["signatures"]["all"] = taskruns_all
+            sd["results"]["signatures"]["succeeded"] = taskruns_succeeded
+            sd["results"]["signatures"]["signed_true"] = taskruns_signed_true
+            sd["results"]["signatures"]["signed_false"] = taskruns_signed_false
+            sd["results"]["signatures"]["signed"] = taskruns_signed_true + taskruns_signed_false
+            sd["results"]["signatures"]["guessed_avg_duration"] = taskruns_sig_avg
+            sd["results"]["signatures"]["guessed_avg_count"] = len(taskruns_sig_duration)
+            sd["results"]["signatures"]["latency_created_succeeded"] = latency_created_succeeded
+            sd["results"]["signatures"]["latency_succeeded_signed"] = latency_succeeded_signed
+            with open(args.status_data_file, "w") as fd:
+                sd = json.dump(sd, fd, indent=4, sort_keys=True)
 
 
 if __name__ == "__main__":
