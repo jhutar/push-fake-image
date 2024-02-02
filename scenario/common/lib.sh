@@ -1,8 +1,10 @@
 function cosign_generate_key_pair_secret() {
-    immutable="$( kubectl -n openshift-pipelines get secret/signing-secrets -o json | jq --raw-output ".immutable" )"
-    if [[ $immutable == "true" ]]; then
-        debug "Secret signing-secrets already there, immutable, skipping creating it again"
-        return
+    if kubectl -n openshift-pipelines get secret/signing-secrets 2>/dev/null; then
+        immutable="$( kubectl -n openshift-pipelines get secret/signing-secrets -o json | jq --raw-output ".immutable" )"
+        if [[ $immutable == "true" ]]; then
+            debug "Secret signing-secrets already there, immutable, skipping creating it again"
+            return
+        fi
     fi
 
     info "Generating signing-secrets secret"
@@ -20,17 +22,45 @@ function cosign_generate_key_pair_secret() {
 }
 
 function chains_setup_generic() {
-    local artifacts_taskrun_format="$1"
-    local artifacts_oci_storage="$2"
+    local artifacts_pipelinerun_format="$1"
+    local artifacts_taskrun_format="$2"
+    local artifacts_oci_storage="$3"
 
     info "Setting up Chains with tekton/tekton"
 
-    # Configure Chains as per https://tekton.dev/docs/chains/signed-provenance-tutorial/#configuring-tekton-chains
-    kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"disabled": false}}}'
-    kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"artifacts.taskrun.format": "slsa/v1"}}}'
-    kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"artifacts.taskrun.storage": "'"$artifacts_taskrun_format"'"}}}'
-    kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"artifacts.oci.storage": "'"$artifacts_oci_storage"'"}}}'
-    kubectl patch TektonConfig/config --type='merge' -p='{"spec":{"chain":{"transparency.enabled": "false"}}}'   # this is the only difference from the docs
+    # Configure Chains similar to https://tekton.dev/docs/chains/signed-provenance-tutorial/#configuring-tekton-chains
+    kubectl patch TektonConfig/config \
+        --type='merge' \
+        -p='{"spec":{"chain":{"disabled": false}}}'
+
+    if [[ -n "$artifacts_pipelinerun_format" ]]; then
+        kubectl patch TektonConfig/config \
+            --type merge \
+            -p '{"spec":{"chain":{"artifacts.pipelinerun.format": "slsa/v1"}}}'
+        kubectl patch TektonConfig/config \
+            --type merge \
+            -p '{"spec":{"chain":{"artifacts.pipelinerun.storage": "'"$artifacts_pipelinerun_format"'"}}}'
+    fi
+
+    if [[ -n "$artifacts_taskrun_format" ]]; then
+        kubectl patch TektonConfig/config \
+            --type='merge' \
+            -p='{"spec":{"chain":{"artifacts.taskrun.format": "slsa/v1"}}}'
+        kubectl patch TektonConfig/config \
+            --type='merge' \
+            -p='{"spec":{"chain":{"artifacts.taskrun.storage": "'"$artifacts_taskrun_format"'"}}}'
+    fi
+
+    if [[ -n "$artifacts_oci_storage" ]]; then
+        kubectl patch TektonConfig/config \
+            --type='merge' \
+            -p='{"spec":{"chain":{"artifacts.oci.storage": "'"$artifacts_oci_storage"'"}}}'
+    fi
+
+    # Do not push stuff outside of cluster
+    kubectl patch TektonConfig/config \
+        --type='merge' \
+        -p='{"spec":{"chain":{"transparency.enabled": "false"}}}'
 
     # Create signing-secrets secret
     cosign_generate_key_pair_secret
@@ -43,10 +73,13 @@ function chains_setup_generic() {
 }
 
 function chains_setup_tekton_tekton() {
-    chains_setup_generic tekton tekton
+    chains_setup_generic "" tekton tekton
 }
 function chains_setup_oci_oci() {
-    chains_setup_generic oci oci
+    chains_setup_generic "" oci oci
+}
+function chains_setup_tekton_tekton_() {
+    chains_setup_generic "tekton" "tekton" ""
 }
 
 function chains_start() {
